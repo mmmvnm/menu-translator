@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>お品書き英語検索ツール</title>
+    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+</head>
+<body>
+    <p class="subtitle">✿ Menu Translator ✿</p>
+    <h1>お品書き英語検索ツール</h1>
+
+    <div class="container">
+
+        <div class="search-area">
+            <h2>料理名を検索</h2>
+            <p>日本語の料理名を入力してください。</p>
+
+            <div class="search-box">
+                
+<span class="search-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="24" height="24"
+         fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="M16 16 L21 21"></path>
+    </svg>
+</span>
+
+                <input id="dishName" type="text"
+                       placeholder="例：胡麻豆腐"
+                       oninput="searchDish()">
+        </div>
+
+        <p class="search-hint">
+            料理名の一部だけでも検索できます。
+        </p>
+        
+        <button type="button" class="show-all-button" onclick="showAllDishes()">
+            <svg width="18" height="18" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 6h13"></path>
+            <path d="M8 12h13"></path>
+            <path d="M8 18h13"></path>
+            <path d="M3 6h.01"></path>
+            <path d="M3 12h.01"></path>
+            <path d="M3 18h.01"></path>
+        </svg>
+        登録料理をすべて表示
+    </button>
+
+    </div>
+
+    <div class="result-area">
+        <div class="result-header">
+            <h2>検索結果</h2>
+            <div id="searchCount"></div>
+        </div>
+
+        <div id="result"></div>
+        <div class="add-menu">
+            <h2>新しい料理を登録</h2>
+
+            <input id="newJapanese" type="text"
+                   placeholder="日本語の料理名">
+
+            <input id="newEnglish" type="text"
+                   placeholder="英語訳">
+
+            <button type="button" id="addButton" onclick="addDish()">
+                ＋ 料理名を登録する
+            </button>
+
+        <div class="data-buttons">
+
+            <button type="button" class="backup-button" onclick="exportMenu()">
+                <svg width="18" height="18" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3v12"></path>
+                <path d="m7 10 5 5 5-5"></path>
+                <path d="M5 17v4h14v-4"></path>
+            </svg>
+            料理データをバックアップ
+        </button>
+        
+    <button type="button" class="restore-button"
+        onclick="document.getElementById('restoreFile').click()">
+        <svg width="18" height="18" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+             <path d="M12 16V4"></path>
+             <path d="m7 9 5-5 5 5"></path>
+             <path d="M5 17v4h14v-4"></path>
+        </svg>
+
+    バックアップから復元
+</button>
+        </div>
+
+        <input type="file" id="restoreFile" accept=".json"
+               style="display: none;" onchange="restoreMenu(event)">
+
+        </div>
+    </div>
+
+</div>
+    
+    <script>
+        const menu = {
+            "胡麻豆腐":"Creamy Sesame Tofu" ,
+            "茶碗蒸し":"Savory Egg Custard" ,
+            "湯葉":"Tofu Skin" ,
+            "信州福味鶏七味焼":"Grilled Shinshu Fukumi Chicken with Shichimi Spice" ,
+            "アワ麩田楽":"Millet Fu with Miso Glaze" ,
+            "信州サーモン燻製":"Smoked Shinshu Salmon" ,
+            "牛時雨煮":"Sweet Soy-Simmered Beef" ,
+            "ちりめん山椒ごはん":"Savory Whitebait Rice with Sansho Pepper" ,
+            "鰻玉地蒸し":"Steamed Eel with Savory Egg Custard" ,
+            "鮎甘露煮":"Sweet-Simmered Ayu" ,
+            "信州吟醸豚香味焼":"Grilled Shinshu Ginjo Pork with Aromatic Seasonings" ,
+            "甘鯛松笠焼":"Grilled Tilefish with Crispy Scales"
+        };
+
+        const savedMenu = localStorage.getItem("savedMenu");
+        
+        if (savedMenu !== null) {
+            const storedMenu = JSON.parse(savedMenu);
+            
+            Object.keys(menu).forEach(dish => {
+                delete menu[dish];
+            });
+            
+            Object.assign(menu, storedMenu);
+        }
+
+        function searchDish(showAll = false) {
+            const name = document.getElementById("dishName").value.trim();
+            const result = document.getElementById("result");
+            const searchCount = document.getElementById("searchCount");
+
+
+            result.innerHTML = "";
+            searchCount.textContent = "";
+
+            if (name === "" && !showAll) {
+                return;
+            }
+
+            const matches = Object.keys(menu).filter(dish =>
+                dish.includes(name)
+            );
+
+            if (showAll) {
+                searchCount.textContent = "登録料理 全" + matches.length + "件";
+            } else {
+                searchCount.textContent = "検索該当 " + matches.length + "件";
+            }
+
+            if (matches.length > 0) {
+                matches.forEach(dish => {
+                    const item = document.createElement("p");
+
+            const text = document.createElement("span");
+
+            const japanese = document.createElement("span");
+            japanese.className = "japanese";
+            japanese.textContent = dish;
+            
+            const english = document.createElement("span");
+            english.className = "english";
+            english.textContent = menu[dish];
+            
+            text.appendChild(japanese);
+            text.appendChild(english);
+
+                    const button = document.createElement("button");
+                    button.textContent ="コピー";
+
+                    button.onclick = async function() {
+                        try {
+                            await navigator.clipboard.writeText(menu[dish]);
+                            button.textContent = "コピー完了！";
+                        } catch (error) {
+                            button.textContent = "コピー失敗";
+                            console.error(error);
+                        }
+                    };
+                    
+                    const editButton = document.createElement("button");
+                    editButton.textContent = "編集";
+                    editButton.className = "edit-button";
+                    
+                    editButton.onclick = function() {
+                        const newJapanese = prompt("料理名を編集", dish);
+                        if (newJapanese === null) {
+                             return;
+                        }
+                        
+                        const newEnglish = prompt("英語訳を編集", menu[dish]);
+                        
+                        if (newEnglish === null) {
+                            return;
+                        }
+                        
+                        const japaneseName = newJapanese.trim();
+                        const englishName = newEnglish.trim();
+                        
+                        if (japaneseName === "" || englishName === "") {
+                            alert("料理名と英語訳は空欄にできません。");
+                            return;
+                        }
+                        
+                        if (japaneseName !== dish && Object.hasOwn(menu, japaneseName)) {
+                            alert("その料理名はすでに登録されています。");
+                            return;
+                        }
+                        
+                        if (japaneseName !== dish) {
+                            delete menu[dish];
+                        }
+                        
+                        menu[japaneseName] = englishName;
+
+                        localStorage.setItem("savedMenu", JSON.stringify(menu));
+                        
+                        document.getElementById("dishName").value = japaneseName;
+                        searchDish();
+                        
+                        alert("料理を更新しました！");
+                    };
+                    
+                    const deleteButton = document.createElement("button");
+                    deleteButton.textContent = "削除";
+                    deleteButton.className = "delete-button";
+                    
+                    deleteButton.onclick = function() {
+                        const ok = confirm(
+                            "「" + dish + "」を削除しますか？"
+                        );
+                        
+                        if (!ok) {
+                            return;
+                        }
+                        
+                        delete menu[dish];
+                        
+                        localStorage.setItem(
+                            "savedMenu",
+                            JSON.stringify(menu)
+                        );
+                        
+                        searchDish();
+                        
+                        alert("料理を削除しました！");
+                    };
+                    
+                    const buttonGroup = document.createElement("div");
+                    buttonGroup.className = "button-group";
+
+                    buttonGroup.appendChild(button);
+                    buttonGroup.appendChild(editButton);
+                    buttonGroup.appendChild(deleteButton);
+                    
+                    item.appendChild(text);
+                    item.appendChild(buttonGroup);
+                    result.appendChild(item);
+
+                });
+
+            } else {
+                result.textContent = "該当する料理がありません。";
+            }
+
+        }
+       
+        function showAllDishes() {
+            document.getElementById("dishName").value = "";
+            searchDish(true);
+        }
+
+        function addDish() {
+        const japanese = document.getElementById("newJapanese").value.trim();
+        const english = document.getElementById("newEnglish").value.trim();
+
+    if (japanese === "" || english === ""){
+        alert("日本語名と英語訳の両方を入力してください。");
+        return;
+    }
+    
+    if (Object.hasOwn(menu, japanese)) {
+        alert("この料理はすでに登録されています。");
+        return;
+    }
+
+    menu[japanese] = english;
+
+    localStorage.setItem("savedMenu",JSON.stringify(menu));
+
+    alert("料理を登録しました！");
+
+    document.getElementById("newJapanese").value = "";
+    document.getElementById("newEnglish").value = "";
+
+    document.getElementById("dishName").value = japanese;
+    searchDish();
+    }
+
+    function exportMenu() {
+        const data = JSON.stringify(menu, null, 2);
+
+        const blob = new Blob([data], {
+            type: "application/json"
+        });
+
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "menu-backup.json";
+        link.click();
+
+        URL.revokeObjectURL(url);
+    }
+
+
+async function restoreMenu(event) {
+    const file = event.target.files[0];
+
+    if (!file) {
+        return;
+    }
+
+    try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        if (
+            typeof data !== "object" ||
+            data === null ||
+            Array.isArray(data) ||
+            Object.entries(data).some(([key, value]) =>
+                typeof value !== "string" ||
+                key.trim() === "" ||
+                value.trim() === ""
+            )
+        ) {
+            alert("正しい料理データではありません。");
+            return;
+        }
+
+        const ok = confirm(
+            "バックアップの料理データを読み込みますか？\n" +
+            "現在の料理データに追加・上書きされます。"
+        );
+
+        if (!ok) {
+            return;
+        }
+
+        Object.assign(menu, data);
+
+        localStorage.setItem(
+            "savedMenu",
+            JSON.stringify(menu)
+        );
+
+        alert("料理データを復元しました！");
+        searchDish();
+
+    } catch (error) {
+        alert("ファイルを読み込めませんでした。");
+        console.error(error);
+
+    } finally {
+        event.target.value = "";
+    }
+}
+
+</script>
+</body>
+</html>
